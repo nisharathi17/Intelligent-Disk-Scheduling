@@ -1,14 +1,13 @@
 import random
-
-
+from unittest import result
 def generate_random_requests(n, num_tracks=200, seed=42):
-    """
-    Pure random requests -- no pattern at all. Useful as a 'worst case'
-    control group: your predictor should NOT be able to do much better
-    than baseline on this data, and that's expected, not a bug.
-    """
-    rng = random.Random(seed)
-    return [rng.randint(0, num_tracks - 1) for _ in range(n)]
+    
+    #Pure random requests -- no pattern at all. 
+    rng = random.Random(seed) #making our own random number generator so we can control the seed for reproducibility. same seed generates same sequence everytime which is used for comparing with same data between different algos
+    result = []
+    for _ in range(n):
+        result.append(rng.randint(0, num_tracks - 1))
+    return result
 
 
 def generate_patterned_requests(n, num_tracks=200, seed=42, locality_chance=0.8, jump_radius=5):
