@@ -1,13 +1,40 @@
 from disk import Disk
 from cache import LRUCache, AdaptiveCache
 from predictor import Predictor
-from scheduling_algorithms import sstf
+
+
+# NOTE on why this isn't "run SSTF on the miss-list": SSTF's total head
+# movement is a function of the *set* of distinct blocks it visits, not
+# of how many times each one appears -- once sorted, a repeated block
+# sits right next to its earlier visit at distance 0. A cache only ever
+# removes repeat (non-first) occurrences of a block, and every block's
+# *first* occurrence is always a genuine miss. So the distinct set a
+# cache leaves behind for SSTF to schedule is always identical to the
+# full request set's distinct values, and re-running SSTF on it always
+# gives the exact same number (248 for the demo trace) -- which is the
+# bug that was reported: all 4 modes collapsing to one value.
+#
+# To make caching actually show up in head_movement, requests have to
+# be serviced as they arrive, one at a time, the way a real disk
+# controller sees them -- it doesn't get to see the whole future trace
+# and re-sort it. A cache hit then means the head truly never moves for
+# that request, which changes the position the *next* real seek starts
+# from, and that's what produces a genuine, varying improvement.
 
 
 def _plain_sstf(requests, head_start, num_tracks):
-    order, movement = sstf(requests, head_start)
+    """
+    Baseline: no cache at all, so every request is a real seek,
+    serviced directly as it arrives (there's nothing to reorder --
+    SSTF only has a choice when multiple requests are pending at once,
+    and here they arrive and get serviced one at a time).
+    """
+    disk = Disk(num_tracks=num_tracks, head_start=head_start)
+    for block in requests:
+        disk.seek(block)
+
     return {
-        "head_movement": movement,
+        "head_movement": disk.total_movement,
         "hit_rate": 0.0,
         "seeks_avoided": 0,
     }
@@ -15,16 +42,13 @@ def _plain_sstf(requests, head_start, num_tracks):
 
 def _sstf_with_cache(requests, head_start, num_tracks, cache_size, use_predictor, cache_cls=LRUCache):
     """
-    Service requests as they actually arrive, one at a time (an OS
-    can't batch-sort requests it hasn't received yet, unlike the
-    idealized 'Plain SSTF' baseline which gets to see the whole trace
-    up front). Each request first checks the cache; on a hit the head
-    doesn't move at all, so whatever seek that request would have cost
-    is avoided outright. On a miss, the disk head seeks directly there.
-    If use_predictor is set, prefetch the Markov predictor's guesses
-    into the cache after each real request, so later requests have a
-    better chance of already being cached. `cache_cls` selects which
-    cache implementation backs this run (plain LRU or AdaptiveCache).
+    Service requests as they arrive. Each one checks the cache first:
+    a hit means the head doesn't move at all for that request. A miss
+    means a real seek straight to that block. Prefetching a predicted
+    block into the cache is a background operation and never costs a
+    seek of its own -- it only affects whether a *later* real request
+    finds its block already cached. `cache_cls` selects which cache
+    implementation backs this run (plain LRU or AdaptiveCache).
     """
     disk = Disk(num_tracks=num_tracks, head_start=head_start)
     cache = cache_cls(cache_size=cache_size)
