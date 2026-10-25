@@ -69,6 +69,8 @@ class AdaptiveCache(LRUCache):
         self._last_block = None
         self._scan_direction = 0
         self._scan_run = 1
+        self.mru_evictions = 0
+        self.lru_evictions = 0
 
     def access(self, block):
         self._update_scan_state(block)
@@ -92,8 +94,10 @@ class AdaptiveCache(LRUCache):
     def _evict(self):
         if self._is_scanning:
             self._store.popitem(last=True)  # MRU eviction during a scan
+            self.mru_evictions += 1
         else:
             self._store.popitem(last=False)  # normal LRU eviction
+            self.lru_evictions += 1
 
 
 if __name__ == "__main__":
