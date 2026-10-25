@@ -1,39 +1,34 @@
-# Intelligent Disk Scheduler
+# Intelligent Disk Scheduling
 
-This project is a compact simulation of an intelligent disk scheduling system with:
+A simulation of disk head scheduling (FCFS, SSTF, LOOK, SCAN, C-SCAN)
+combined with an LRU/adaptive cache and a Markov chain predictor for
+prefetching, so you can see how caching and prediction reduce real
+disk head movement on top of classic scheduling algorithms.
 
-- virtual disk modeling
-- request generation
-- scheduling algorithms (FCFS, SSTF, SCAN, LOOK, C-SCAN)
-- LRU cache support
-- future block prediction
-- simple metrics and optional visualization
-
-## Folder structure
-
-- `disk.py` — virtual disk model
-- `request_generator.py` — request trace generation
-- `scheduling_algorithms.py` — disk scheduling policies
-- `cache.py` — LRU caching logic
-- `predictor.py` — future block predictor
-- `intelligent_scheduler.py` — combined scheduling orchestrator
-- `metrics.py` — performance metrics
-- `visualize.py` — simple graph output
-- `main.py` — demo runner
-- `test_cases.py` — sanity checks
-
-## Run the demo
+## How to run
 
 ```bash
-python main.py
+python ui.py      # tkinter GUI with charts and stats
+python main.py     # menu-driven CLI
 ```
 
-## Run tests
+## Files
 
-```bash
-python test_cases.py
-```
+- `disk.py` — virtual disk model, tracks head position and movement
+- `request_generator.py` — random, patterned, and mixed request traces
+- `scheduling_algorithms.py` — FCFS, SSTF, LOOK, SCAN policies
+- `cache.py` — LRUCache and AdaptiveCache (LRU/MRU hybrid)
+- `predictor.py` — Markov chain next-block predictor
+- `metrics.py` — head movement, seek time, algorithm comparison
+- `intelligent_scheduler.py` — single-pass cache + predictor simulation
+- `integrated_scheduler.py` — 4-mode cache/prediction comparison
+- `main.py` — menu-driven CLI demo
+- `ui.py` — tkinter GUI with bar charts and stat panels
+- `visualize.py` — matplotlib chart helpers
+- `test_*.py` — unit tests
 
-## Notes
+## Requirements
 
-The scheduler is intentionally simple and educational, designed for experimentation and extension rather than production use.
+- Python 3.7+
+- `tkinter` (for `ui.py`; ships with most Python installs)
+- `matplotlib` (for `visualize.py` only)
